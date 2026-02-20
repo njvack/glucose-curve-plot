@@ -309,6 +309,9 @@
       // ── chart ──
       const width = chartEl.clientWidth || 820;
 
+      // Snap the Y ceiling to the next multiple of 50 above the data max
+      const yTop = Math.ceil(d3.max(data, d => d["Glucose (mg/dL)"]) * 1.1 / 50) * 50;
+
       const chart = Plot.plot({
         width,
         height: 380,
@@ -322,7 +325,8 @@
         y: {
           label: "↑ Glucose (mg/dL)",
           labelOffset: 46,
-          domain: [0, d3.max(data, d => d["Glucose (mg/dL)"]) * 1.1],
+          domain: [0, yTop],
+          ticks: d3.range(0, yTop + 1, 50),
         },
         color: {
           type: "ordinal",
