@@ -322,7 +322,7 @@
         y: {
           label: "↑ Glucose (mg/dL)",
           labelOffset: 46,
-          domain: [0, null],
+          domain: [0, d3.max(data, d => d["Glucose (mg/dL)"])],
         },
         color: {
           type: "ordinal",
