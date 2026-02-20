@@ -322,7 +322,7 @@
         y: {
           label: "↑ Glucose (mg/dL)",
           labelOffset: 46,
-          domain: [0, d3.max(data, d => d["Glucose (mg/dL)"])],
+          domain: [0, d3.max(data, d => d["Glucose (mg/dL)"]) * 1.1],
         },
         color: {
           type: "ordinal",
@@ -344,9 +344,13 @@
             stroke: "white",
             strokeWidth: 1,
             r: 4.5,
+          }),
+          Plot.tip(plotData, Plot.pointer({
+            x: "Hours since feeding",
+            y: "Glucose (mg/dL)",
             title: d =>
               `${d.Label}\n${d["Hours since feeding"].toFixed(1)} hr after feeding\n${d["Glucose (mg/dL)"]} mg/dL`,
-          }),
+          })),
         ],
       });
 
