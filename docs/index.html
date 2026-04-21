@@ -315,11 +315,46 @@
       const colorMap = new Map(sortedLabels.map((l, i) => [l, colors[i]]));
       const rankMap = new Map(sortedLabels.map((l, i) => [l, i]));
 
-      // Sort for drawing: oldest group first (drawn below), x ascending within group
-      const plotData = [...data].sort((a, b) => {
+      // Group by (Label, Hours since feeding) to detect duplicates at the same time point
+      const grouped = d3.rollup(
+        data,
+        rows => rows,
+        d => d.Label,
+        d => d["Hours since feeding"]
+      );
+
+      // lineData: median glucose per (Label, x) for the connecting line
+      // errorBarData: min/max per group that has >1 point, for vertical error bars
+      const lineData = [];
+      const errorBarData = [];
+
+      for (const [label, byHours] of grouped) {
+        for (const [hours, rows] of byHours) {
+          const glucoseValues = rows.map(r => r["Glucose (mg/dL)"]);
+          lineData.push({
+            Label: label,
+            "Hours since feeding": hours,
+            "Glucose (mg/dL)": d3.median(glucoseValues),
+          });
+          if (rows.length > 1) {
+            errorBarData.push({
+              Label: label,
+              "Hours since feeding": hours,
+              minGlucose: d3.min(glucoseValues),
+              maxGlucose: d3.max(glucoseValues),
+            });
+          }
+        }
+      }
+
+      const sortFn = (a, b) => {
         const dr = rankMap.get(a.Label) - rankMap.get(b.Label);
         return dr !== 0 ? dr : a["Hours since feeding"] - b["Hours since feeding"];
-      });
+      };
+
+      // plotData: all individual points for dots; linePlotData: median points for line
+      const plotData = [...data].sort(sortFn);
+      const linePlotData = [...lineData].sort(sortFn);
 
       // ── chart ──
       const width = chartEl.clientWidth || 820;
@@ -352,11 +387,18 @@
         marks: [
           Plot.rect([{}], { y1: 120, y2: 300, fill: "#90ee90", fillOpacity: 0.3 }),
           Plot.rect([{}], { y1: 0, y2: 65, fill: "#ffff00", fillOpacity: 0.3 }),
-          Plot.line(plotData, {
+          Plot.line(linePlotData, {
             x: "Hours since feeding",
             y: "Glucose (mg/dL)",
             stroke: "Label",
             strokeWidth: 2.5,
+          }),
+          Plot.ruleX(errorBarData, {
+            x: "Hours since feeding",
+            y1: "minGlucose",
+            y2: "maxGlucose",
+            stroke: "Label",
+            strokeWidth: 1.5,
           }),
           Plot.dot(plotData, {
             x: "Hours since feeding",
